@@ -1,9 +1,19 @@
-from PyQt5.QtSql import QSqlDatabase, QSqlQuery
-from PyQt5 import QtCore, QtGui, QtWidgets
-import pymssql
+import sys
+from pymssql import connect
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QLineEdit, QWidget
 
+#常量定义
+server="127.0.0.1"
+password="qwer"
+user="usr"
 
 class Ui_MainWindow(object):
+
+    def __init__(self):
+        self.switch_window = pyqtSignal(str)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -41,9 +51,12 @@ class Ui_MainWindow(object):
         self.lineEdit_3 = QtWidgets.QLineEdit(self.verticalLayoutWidget_2)
         self.lineEdit_3.setObjectName("lineEdit_3")
         self.verticalLayout_4.addWidget(self.lineEdit_3)
-        self.lineEdit_4 = QtWidgets.QLineEdit(self.verticalLayoutWidget_2)
-        self.lineEdit_4.setObjectName("lineEdit_4")
-        self.verticalLayout_4.addWidget(self.lineEdit_4)
+
+        self.pwd_line = QtWidgets.QLineEdit(self.verticalLayoutWidget_2)
+        self.pwd_line.setObjectName("lineEdit_4")
+        self.pwd_line.setEchoMode(QLineEdit.Password)
+        self.verticalLayout_4.addWidget(self.pwd_line)
+
         self.pushButton = QtWidgets.QPushButton(self.frame)
         self.pushButton.setGeometry(QtCore.QRect(150, 160, 93, 29))
         self.pushButton.setMinimumSize(QtCore.QSize(93, 29))
@@ -68,29 +81,6 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def Login(self):
-        UserName = self.lineEdit_3.text()
-        Passwd = self.lineEdit_4.text()
-        db = QSqlDatabase.addDatabase("QODBC")
-        db.setDatabaseName("Driver={Sql Server};Server=localhost;Uid=usr;Pwd=qwer")
-        db.open()
-        # 创建查询对象（使用默认数据库连接）
-        query = QSqlQuery()
-
-        # 查询数据库名（保存在master.sys.databases表中）
-        query.exec("Select * From Users")
-
-        login = 0
-        while query.next():
-            # 获取名称字段的值
-            name = query.value("UserName")
-            passwd = query.value("Passwd")
-            if name == UserName and Passwd == passwd:
-                print("ok")
-                login = 1
-        if login == 0:
-            print("Fail")
-        db.close()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -107,3 +97,40 @@ class Ui_MainWindow(object):
                                             "<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n"
                                             "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'verdana\'; font-size:14pt;\">EnHelper</span></p>\n"
                                             "<p align=\"center\" style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'微软雅黑\'; font-size:14pt;\">单词学习小助手</span></p></body></html>"))
+
+    def Login(self):
+        UserName = self.lineEdit_3.text()
+        Passwd = self.pwd_line.text()
+        conn = connect(server,user,password,"EnHelper")
+        cur = conn.cursor()
+        cur.execute("Select * From Users")
+        row = cur.fetchone()
+        login = 0
+        while row:
+            # 获取名称字段的值
+            if login == 1:
+                break
+            name = row[0]
+            passwd = row[2]
+            if name == UserName and Passwd == passwd:
+                print("ok")
+                login = 1
+                self.switch_window.emit("loginOK")
+
+            row = cur.fetchone()
+        if login == 0:
+            print("Fail")
+            QMessageBox.critical(QWidget(), "登陆失败", "用户名或密码错误")
+            # 保留用户名删除密码，光标停留在密码处
+            self.pwd_line.clear()
+            self.pwd_line.setFocus()
+        cur.close()
+        conn.close()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    MainWindow = QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
