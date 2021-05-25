@@ -2,18 +2,16 @@ import sys
 from pymssql import connect
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QLineEdit, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QLineEdit, QWidget,QGraphicsObject
 
-#常量定义
-server="127.0.0.1"
-password="qwer"
-user="usr"
+# 常量定义
+server = "127.0.0.1"
+password = "qwer"
+user = "usr"
 
-class Ui_MainWindow(object):
 
-    def __init__(self):
-        self.switch_window = pyqtSignal(str)
-
+class loginUI(QGraphicsObject):
+    switch_window = pyqtSignal()
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -81,7 +79,6 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "EnHelper"))
@@ -101,7 +98,11 @@ class Ui_MainWindow(object):
     def Login(self):
         UserName = self.lineEdit_3.text()
         Passwd = self.pwd_line.text()
-        conn = connect(server,user,password,"EnHelper")
+        # if UserName == "123" and Passwd == "123":
+        #     print("ok")
+        #     self.switch_window.emit()
+        #     print("Signal ok")
+        conn = connect(server, user, password, "EnHelper")
         cur = conn.cursor()
         cur.execute("Select * From Users")
         row = cur.fetchone()
@@ -113,9 +114,9 @@ class Ui_MainWindow(object):
             name = row[0]
             passwd = row[2]
             if name == UserName and Passwd == passwd:
-                print("ok")
                 login = 1
-                self.switch_window.emit("loginOK")
+                self.switch_window.emit()
+                print("login signal ok")
 
             row = cur.fetchone()
         if login == 0:
@@ -127,10 +128,11 @@ class Ui_MainWindow(object):
         cur.close()
         conn.close()
 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
-    ui = Ui_MainWindow()
+    ui = loginUI()
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
