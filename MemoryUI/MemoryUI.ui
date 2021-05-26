@@ -28,7 +28,7 @@
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QPushButton" name="memo_btn">
+      <widget class="QPushButton" name="ok_btn">
        <property name="font">
         <font>
          <family>微软雅黑</family>
@@ -40,7 +40,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="test_btn">
+      <widget class="QPushButton" name="info_btn">
        <property name="font">
         <font>
          <family>微软雅黑</family>
@@ -52,7 +52,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="mis_btn">
+      <widget class="QPushButton" name="pass_btn">
        <property name="font">
         <font>
          <family>微软雅黑</family>
@@ -64,7 +64,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="set_btn">
+      <widget class="QPushButton" name="miss_btn">
        <property name="font">
         <font>
          <family>微软雅黑</family>
@@ -114,7 +114,7 @@ p, li { white-space: pre-wrap; }
       </layout>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="back_btn">
        <property name="text">
         <string>返回</string>
        </property>
@@ -133,7 +133,7 @@ p, li { white-space: pre-wrap; }
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QTextBrowser" name="textBrowser"/>
+      <widget class="QTextBrowser" name="WordBrowser"/>
      </item>
      <item>
       <widget class="QTabWidget" name="infos">
@@ -144,7 +144,7 @@ p, li { white-space: pre-wrap; }
         <attribute name="title">
          <string>Tab 1</string>
         </attribute>
-        <widget class="QTextEdit" name="textEdit">
+        <widget class="QTextEdit" name="paraEdit">
          <property name="geometry">
           <rect>
            <x>20</x>
@@ -159,7 +159,7 @@ p, li { white-space: pre-wrap; }
         <attribute name="title">
          <string>Tab 2</string>
         </attribute>
-        <widget class="QTextEdit" name="textEdit_2">
+        <widget class="QTextEdit" name="sentence_2">
          <property name="geometry">
           <rect>
            <x>20</x>
@@ -180,7 +180,7 @@ p, li { white-space: pre-wrap; }
       <x>210</x>
       <y>440</y>
       <width>401</width>
-      <height>101</height>
+      <height>111</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout">
