@@ -1,5 +1,5 @@
 import sys
-import Controller
+import Const
 from pymssql import connect
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -115,9 +115,10 @@ class loginUI(QGraphicsObject):
             name = row[0]
             passwd = row[2]
             if name == UserName and Passwd == passwd:
-                Controller.userid_now = row[1]
-                print(Controller.userid_now)
+                Const.userid_now = row[1]
+                print(Const.userid_now)
                 login = 1
+                Const.username_now = row[0]
                 self.switch_window.emit()
                 print("login signal ok")
 
