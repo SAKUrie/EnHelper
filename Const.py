@@ -1,6 +1,7 @@
 import LoginUI,MainUI,MemoryUI,SearchUI,TestUI
 from PyQt5.QtWidgets import QGraphicsObject
-
+#当前用户
+icon_path = ""
 userid_now="0000001"
 username_now="滕翡"
 
