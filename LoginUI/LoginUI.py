@@ -12,7 +12,8 @@ user = "usr"
 
 
 class loginUI(QGraphicsObject):
-    switch_window = pyqtSignal()
+    switch_window_user = pyqtSignal()
+    switch_window_admin = pyqtSignal()
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -99,10 +100,12 @@ class loginUI(QGraphicsObject):
     def Login(self):
         UserName = self.lineEdit_3.text()
         Passwd = self.pwd_line.text()
-        # if UserName == "123" and Passwd == "123":
-        #     print("ok")
-        #     self.switch_window.emit()
-        #     print("Signal ok")
+
+        if UserName == "Admin" and Passwd == "Admin":
+            print("Admin ok")
+            self.switch_window_admin.emit()
+            return
+
         conn = connect(server, user, password, "EnHelper")
         cur = conn.cursor()
         cur.execute("Select * From Users")
@@ -119,7 +122,7 @@ class loginUI(QGraphicsObject):
                 print(Const.userid_now)
                 login = 1
                 Const.username_now = row[0]
-                self.switch_window.emit()
+                self.switch_window_user.emit()
                 print("login signal ok")
 
             row = cur.fetchone()
@@ -131,6 +134,7 @@ class loginUI(QGraphicsObject):
             self.pwd_line.setFocus()
         cur.close()
         conn.close()
+        return
 
 
 if __name__ == '__main__':
