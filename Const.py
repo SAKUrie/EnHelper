@@ -2,6 +2,8 @@
     项目运行重要变量
 
 """
+
+
 #当前用户
 icon_path = ""
 userid_now="0000001"
@@ -15,8 +17,6 @@ user = "usr"
 # 选项常量
 switch = 1
 
-#查询常量
-text1=""
-text2=""
-text3=""
-test4=""
+#自增常量
+misno=0
+mno=0

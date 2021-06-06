@@ -10,11 +10,15 @@ import sys
 
 import pymssql
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsObject
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGraphicsObject, QMessageBox
 import Const
+import time
 
 
-class MemoryUI(QGraphicsObject):
+class MemoryUI(QMainWindow):
+    backSignal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.wordlist = list()
@@ -39,7 +43,7 @@ class MemoryUI(QGraphicsObject):
         self.ok_btn.setFont(font)
         self.ok_btn.setObjectName("ok_btn")
         self.verticalLayout.addWidget(self.ok_btn)
-        self.ok_btn.clicked.connect(self.okAction)
+        self.ok_btn.clicked.connect(lambda: self.okAction(MainWindow))
 
         self.info_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         font = QtGui.QFont()
@@ -47,7 +51,7 @@ class MemoryUI(QGraphicsObject):
         self.info_btn.setFont(font)
         self.info_btn.setObjectName("info_btn")
         self.verticalLayout.addWidget(self.info_btn)
-        self.info_btn.clicked.connect(self.infoShow)
+        self.info_btn.clicked.connect(lambda: self.infoShow(MainWindow))
 
         self.pass_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         font = QtGui.QFont()
@@ -55,7 +59,7 @@ class MemoryUI(QGraphicsObject):
         self.pass_btn.setFont(font)
         self.pass_btn.setObjectName("pass_btn")
         self.verticalLayout.addWidget(self.pass_btn)
-        self.pass_btn.clicked.connect(self.passAction)
+        self.pass_btn.clicked.connect(lambda: self.passAction(MainWindow))
 
         self.miss_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         font = QtGui.QFont()
@@ -63,7 +67,7 @@ class MemoryUI(QGraphicsObject):
         self.miss_btn.setFont(font)
         self.miss_btn.setObjectName("miss_btn")
         self.verticalLayout.addWidget(self.miss_btn)
-        self.miss_btn.clicked.connect(self.missAction())
+        self.miss_btn.clicked.connect(lambda: self.missAction(MainWindow))
 
         self.back_btn = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.back_btn.setObjectName("back_btn")
@@ -213,63 +217,194 @@ class MemoryUI(QGraphicsObject):
         # 获取本次背诵单词列表
         self.WordListLoad()
 
+        self.loadNextWord()
         # todo
         # 加载头像
         self.Icon.setText(_translate("MainWindow", "Icon"))
+
+    def message(self, Q, s, title="Info"):
+        msg = QMessageBox(Q)
+        msg.setWindowTitle(title)
+        msg.setText(s)
+        print("output:" + s)
+        msg.show()
+        msg.buttonClicked.connect(msg.exec_)
 
     # 加载单词列表
     def WordListLoad(self):
         conn = pymssql.connect(Const.server, Const.user, Const.password, "EnHelper")
         cur = conn.cursor()
-        sql = ""
+        sql = "select CustomsLibrary.Cno,FullWord.Wno,Word,Wpara,Sentence,Sch " \
+              "from CustomsLibrary,FullWord,LibraryInfo " \
+              "where CustomsLibrary.cno = LibraryInfo.cno and FullWord.Wno=LibraryInfo.wno"
+        cur.execute(sql)
         count = 0
         row = cur.fetchone()
-        while row and count <= 50:
+        while row and count < 20:
             count = count + 1
             self.wordlist.append(row)
+            row = cur.fetchone()
+        self.TotalMemoNumber = count
+        self.nowMemoNumber = 0
+        print(self.TotalMemoNumber)
+        print(self.wordlist)
         cur.close()
+
+        #自增数设定
+        cur = conn.cursor()
+        sql = "select max(cast(Misno as int)) from Mistakes"
+        cur.execute(sql)
+        row = cur.fetchone()
+        if row[0] is not None:
+            Const.misno = int(row[0]) + 1
+        cur.close()
+
+        cur = conn.cursor()
+        sql = "select max(cast(Mno as int)) from MemoryRecord"
+        cur.execute(sql)
+        row = cur.fetchone()
+        if row[0] is not None:
+            Const.mno = int(row[0]) + 1
+        cur.close()
+
         conn.close()
 
-    # todo
-    def missAction(self):
+        #LED显示
+        self.WordNumber.display(self.TotalMemoNumber)
+        self.UptoNumber.display(self.TotalMemoNumber-self.nowMemoNumber+1)
+
+    def loadInfo(self):
+        now = self.nowMemoNumber
+        self.paraEdit.setText(self.wordlist[now][3])
+        self.sentence_2.setText("例句：{}\n释义：{}".format(self.wordlist[now][4], self.wordlist[now][5]))
+
+    def loadNextWord(self):
+        now = self.nowMemoNumber
+        self.nowMemoNumber = self.nowMemoNumber + 1
+
+        last = now - 1
+
+        if last >= 0:
+            self.lastWord.setText(self.wordlist[last][2])
+            self.LastWordPara.setText(self.wordlist[last][3])
+            self.lastWordSentence.setText("例句：{}\n释义：{}".format(self.wordlist[last][4], self.wordlist[last][5]))
+
+        self.WordBrowser.setText(self.wordlist[now][2])
+        self.paraEdit.setText("")
+        self.sentence_2.setText("")
+        self.UptoNumber.display(self.TotalMemoNumber-self.nowMemoNumber+1)
+
+    def missAction(self, Q):
         """
         添加错误记录
         显示单词信息
         :return:
         """
-        pass
 
-    # todo
-    def okAction(self):
+        word = self.WordBrowser.toPlainText()
+        misno = Const.misno
+
+        #加载信息，等待
+        self.loadInfo()
+
+        conn = pymssql.connect(Const.server, Const.user, Const.password, "EnHelper")
+        cur = conn.cursor()
+
+        sql = "select Wno from Words where Word='{}'".format(word)
+        cur.execute(sql)
+        wno = cur.fetchone()[0]
+        cur.close()
+
+        cur = conn.cursor()
+        sql = "insert into Mistakes values('{}','{}')".format(Const.userid_now, misno)
+        Const.misno = Const.misno + 1
+        cur.execute(sql)
+        conn.commit()
+
+        sql = "insert into MistakesInfo values('{}','{}',getdate())".format(misno,wno)
+        cur.execute(sql)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        self.message(Q, "错题添加成功咯", "(QvQ)")
+
+        self.loadNextWord()
+
+    def okAction(self,Q):
         """
         添加背诵记录
         刷新列表
         :return:
         """
-        pass
+        word = self.WordBrowser.toPlainText()
+        mno = Const.mno
+        now = self.nowMemoNumber-1
 
-    # todo
-    def infoShow(self):
+        #加载信息，等待
+        self.loadInfo()
+
+        conn = pymssql.connect(Const.server, Const.user, Const.password, "EnHelper")
+        cur = conn.cursor()
+
+        sql = "select Wno from Words where Word='{}'".format(word)
+        cur.execute(sql)
+        wno = cur.fetchone()[0]
+        cur.close()
+
+        cur = conn.cursor()
+        sql = "insert into MemoryRecord values('{}','{}','{}','{}',getdate(),1,NULL)".format(mno,Const.userid_now,self.wordlist[now][0],wno)
+        Const.mno = Const.mno + 1
+        cur.execute(sql)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        self.message(Q, "背诵记录OK", "(*v*)")
+
+        self.loadNextWord()
+
+
+    def infoShow(self,Q):
         """
         显示单词信息
         :return:
         """
-        pass
+        self.loadInfo()
 
-    # todo
-    def passAction(self):
+
+    def passAction(self,Q):
         """
-        添加背诵记录 但不进行复习测试
+        从词库删除本单词
         :return:
         """
-        pass
+        word = self.WordBrowser.toPlainText()
+        mno = Const.mno
+        now = self.nowMemoNumber - 1
 
-    def backAction(self):
-        """
+        # 加载信息，等待
+        self.loadInfo()
 
-        :return:
-        """
-        pass
+        conn = pymssql.connect(Const.server, Const.user, Const.password, "EnHelper")
+        cur = conn.cursor()
+
+        sql = "select Wno from Words where Word='{}'".format(word)
+        cur.execute(sql)
+        wno = cur.fetchone()[0]
+        cur.close()
+
+        cur = conn.cursor()
+        sql = "delete from LibraryInfo where cno = {} and wno = {}".format(self.wordlist[now][0],wno)
+        cur.execute(sql)
+        conn.commit()
+        self.message(Q, "直接通过这个单词啦！", "(*v*)")
+
+    def back(self):
+        self.backSignal.emit()
+        print("back")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
